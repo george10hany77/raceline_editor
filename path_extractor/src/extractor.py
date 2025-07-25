@@ -89,42 +89,81 @@ def pixel_to_world(px, py, resolution, origin):
     return world_x, world_y
 
 def main():
-    """
-    Main function to run the path extraction process.
-    This function is currently a placeholder and does not perform any operations.
-    """
-
-    parser = argparse.ArgumentParser(description="Draw 1-pixel points from CSV onto ROS map image.")
+    parser = argparse.ArgumentParser(description="Replace racing line segment using BFS path between start/end points.")
     parser.add_argument("map_png", help="Path to the map PNG file")
-    # parser.add_argument("--output", default="output.png", help="Output image path")
+    parser.add_argument("map_yaml", help="Path to the map YAML file")
+    parser.add_argument("racing_csv", help="CSV file with x,y points in map frame (meters)")
+    parser.add_argument("--output", default="modified_racingline.csv", help="Output CSV path")
 
     args = parser.parse_args()
 
-    # --- Load image ---
+    # Load image and metadata
     pixels, width, height = extract_pixels(args.map_png)
+    resolution, origin = load_map_metadata(args.map_yaml)
 
-    # --- Find start and end positions ---
-    start = end = None
-
+    # Find start and end positions in the image
     start, end = find_start_end_positions(pixels, width, height)
-    if start:
-        print(f"Start found at: ({start.x}, {start.y})")
-    if end:
-        print(f"End found at: ({end.x}, {end.y})")
-
     if not start or not end:
         raise Exception("Start or end color not found.")
-        
+    print(f"Start at: ({start.x}, {start.y}), End at: ({end.x}, {end.y})")
+
+    # Generate path using BFS
     path = extract_path(start, end, pixels, width, height)
-    if path:
-        print(f"Path found: {len(path)} nodes")
-        # discretizing the path
-        path = path[::5]  # Example: take every 5th node for simplicity
-        print(f"Discretized path: {len(path)} nodes")
-        for node in path:
-            print(f"Node at ({node.x}, {node.y})")
-    else:
-        print("No path found from start to end.")
+    if not path:
+        print("No path found.")
+        return
+    print(f"Generated path length: {len(path)}")
+    path = path[::5]  # Optional discretization
+    print(f"Discretized path length: {len(path)}")
+
+    # Convert racing line from map (meters) to image pixels
+    racing_line_pixels = []
+    original_racing_line_world = []
+    with open(args.racing_csv, 'r') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if len(row) >= 2:
+                x_world = float(row[0])
+                y_world = float(row[1])
+                v_world = float(row[2]) if len(row) > 2 else 0.0  # Optional velocity
+                px = int((x_world - origin[0]) / resolution)
+                py = height - int((y_world - origin[1]) / resolution)
+                racing_line_pixels.append((px, py))
+                original_racing_line_world.append((x_world, y_world, v_world))  # keep for saving
+
+    # Find nearest racing points to start and end
+    def dist(a, b): return ((a[0] - b[0])**2 + (a[1] - b[1])**2)**0.5
+    start_idx = min(range(len(racing_line_pixels)), key=lambda i: dist((start.x, start.y), racing_line_pixels[i]))
+    end_idx = min(range(len(racing_line_pixels)), key=lambda i: dist((end.x, end.y), racing_line_pixels[i]))
+    i1, i2 = sorted([start_idx, end_idx])
+
+    print(f"Replacing CSV segment from index {i1} to {i2} (inclusive)")
+
+    # Replace segment
+    path_pixels = [(node.x, node.y) for node in path]
+
+    # Convert new segment back to world (map) coordinates
+    path_world = []
+    for px, py in path_pixels:
+        wx = px * resolution + origin[0]
+        wy = (height - py) * resolution + origin[1]
+        path_world.append((round(wx, 7), round(wy, 7)))
+
+    if dist(original_racing_line_world[i1], path_world[0]) > dist(original_racing_line_world[i2], path_world[-1]):
+        path_world.reverse()
+
+    for (px, py) in path_world:
+        print(f"New point: ({px}, {py})")
+
+    # Final modified path
+    modified_path = original_racing_line_world[:i1] + path_world + original_racing_line_world[i2+1:]
+
+    # Save to CSV
+    with open(args.output, 'w', newline='') as f:
+        writer = csv.writer(f)
+        for point in modified_path:
+            writer.writerow(point)
+    print(f"Saved modified racing line to: {args.output}")
 
 # Example usage
 if __name__ == "__main__":
