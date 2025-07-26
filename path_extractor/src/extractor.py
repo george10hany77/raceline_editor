@@ -88,6 +88,52 @@ def pixel_to_world(px, py, resolution, origin):
     world_y = py * resolution + origin_y
     return world_x, world_y
 
+
+def load_racing_line_pixels(csv_path, origin, resolution, height):
+    racing_line_pixels = []
+    original_racing_line_world = []
+    with open(csv_path, 'r') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if len(row) >= 2:
+                x_world = float(row[0])
+                y_world = float(row[1])
+                v_world = float(row[2]) if len(row) > 2 else 0.0  # Optional velocity
+                px = int((x_world - origin[0]) / resolution)
+                py = height - int((y_world - origin[1]) / resolution)
+                racing_line_pixels.append((px, py))
+                original_racing_line_world.append((x_world, y_world, v_world))  # keep for saving
+    return racing_line_pixels, original_racing_line_world
+
+def dist(a, b):
+    return ((a[0] - b[0])**2 + (a[1] - b[1])**2)**0.5
+
+def find_nearest_indices(start, end, racing_line_pixels):
+    start_idx = min(range(len(racing_line_pixels)), key=lambda i: dist((start.x, start.y), racing_line_pixels[i]))
+    end_idx = min(range(len(racing_line_pixels)), key=lambda i: dist((end.x, end.y), racing_line_pixels[i]))
+    return sorted([start_idx, end_idx])
+
+def convert_path_to_world_coordinates(path, resolution, origin, height):
+        # Replace segment
+    path_pixels = [(node.x, node.y) for node in path]
+
+    # Convert new segment back to world (map) coordinates
+    path_world = []
+    for px, py in path_pixels:
+        wx = px * resolution + origin[0]
+        wy = (height - py) * resolution + origin[1]
+        path_world.append((round(wx, 7), round(wy, 7)))
+    return path_world
+
+def save_modified_path_to_csv(modified_path, output_csv_path):
+    # Save to CSV
+    with open(output_csv_path, 'w', newline='') as f:
+        writer = csv.writer(f)
+        for point in modified_path:
+            writer.writerow(point)
+    print(f"Saved modified racing line to: {output_csv_path}")
+
+
 def main():
     # Load image and metadata
     pixels, width, height = extract_pixels(extractor_config.MAP_PATH.value)
@@ -109,37 +155,17 @@ def main():
     print(f"Discretized path length: {len(path)}")
 
     # Convert racing line from map (meters) to image pixels
-    racing_line_pixels = []
-    original_racing_line_world = []
-    with open(extractor_config.RACING_CSV.value, 'r') as f:
-        reader = csv.reader(f)
-        for row in reader:
-            if len(row) >= 2:
-                x_world = float(row[0])
-                y_world = float(row[1])
-                v_world = float(row[2]) if len(row) > 2 else 0.0  # Optional velocity
-                px = int((x_world - origin[0]) / resolution)
-                py = height - int((y_world - origin[1]) / resolution)
-                racing_line_pixels.append((px, py))
-                original_racing_line_world.append((x_world, y_world, v_world))  # keep for saving
+    racing_line_pixels, original_racing_line_world = load_racing_line_pixels(
+        extractor_config.RACING_CSV.value, origin, resolution, height
+    )
 
     # Find nearest racing points to start and end
-    def dist(a, b): return ((a[0] - b[0])**2 + (a[1] - b[1])**2)**0.5
-    start_idx = min(range(len(racing_line_pixels)), key=lambda i: dist((start.x, start.y), racing_line_pixels[i]))
-    end_idx = min(range(len(racing_line_pixels)), key=lambda i: dist((end.x, end.y), racing_line_pixels[i]))
-    i1, i2 = sorted([start_idx, end_idx])
+    i1, i2 = find_nearest_indices(start, end, racing_line_pixels)
 
     print(f"Replacing CSV segment from index {i1} to {i2} (inclusive)")
 
-    # Replace segment
-    path_pixels = [(node.x, node.y) for node in path]
-
-    # Convert new segment back to world (map) coordinates
-    path_world = []
-    for px, py in path_pixels:
-        wx = px * resolution + origin[0]
-        wy = (height - py) * resolution + origin[1]
-        path_world.append((round(wx, 7), round(wy, 7)))
+    # Convert path to world coordinates
+    path_world = convert_path_to_world_coordinates(path, resolution, origin, height)
 
     print(f"dist1: {dist(original_racing_line_world[i1], path_world[0])}")
     print(f"dist2: {dist(original_racing_line_world[i1], path_world[-1])}")
@@ -153,11 +179,7 @@ def main():
     modified_path = original_racing_line_world[:i1] + path_world + original_racing_line_world[i2+1:]
 
     # Save to CSV
-    with open(extractor_config.OUTPUT_CSV.value, 'w', newline='') as f:
-        writer = csv.writer(f)
-        for point in modified_path:
-            writer.writerow(point)
-    print(f"Saved modified racing line to: {extractor_config.OUTPUT_CSV.value}")
+    save_modified_path_to_csv(modified_path, extractor_config.OUTPUT_CSV.value)
 
 # Example usage
 if __name__ == "__main__":
