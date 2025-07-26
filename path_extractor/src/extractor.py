@@ -1,10 +1,10 @@
-from Node import Node
+from path_extractor.src.Node import Node
 from queue import Queue
 from PIL import Image
-from state import State
 import yaml
 import csv
 import argparse
+from path_extractor.config.config import extractor_config, State
 
 def rgb_to_hex(rgb):
     return "#{:02x}{:02x}{:02x}".format(*rgb).lower()
@@ -89,17 +89,9 @@ def pixel_to_world(px, py, resolution, origin):
     return world_x, world_y
 
 def main():
-    parser = argparse.ArgumentParser(description="Replace racing line segment using BFS path between start/end points.")
-    parser.add_argument("map_png", help="Path to the map PNG file")
-    parser.add_argument("map_yaml", help="Path to the map YAML file")
-    parser.add_argument("racing_csv", help="CSV file with x,y points in map frame (meters)")
-    parser.add_argument("--output", default="modified_racingline.csv", help="Output CSV path")
-
-    args = parser.parse_args()
-
     # Load image and metadata
-    pixels, width, height = extract_pixels(args.map_png)
-    resolution, origin = load_map_metadata(args.map_yaml)
+    pixels, width, height = extract_pixels(extractor_config.MAP_PATH.value)
+    resolution, origin = load_map_metadata(extractor_config.MAP_YAML.value)
 
     # Find start and end positions in the image
     start, end = find_start_end_positions(pixels, width, height)
@@ -119,7 +111,7 @@ def main():
     # Convert racing line from map (meters) to image pixels
     racing_line_pixels = []
     original_racing_line_world = []
-    with open(args.racing_csv, 'r') as f:
+    with open(extractor_config.RACING_CSV.value, 'r') as f:
         reader = csv.reader(f)
         for row in reader:
             if len(row) >= 2:
@@ -149,7 +141,9 @@ def main():
         wy = (height - py) * resolution + origin[1]
         path_world.append((round(wx, 7), round(wy, 7)))
 
-    if dist(original_racing_line_world[i1], path_world[0]) > dist(original_racing_line_world[i2], path_world[-1]):
+    print(f"dist1: {dist(original_racing_line_world[i1], path_world[0])}")
+    print(f"dist2: {dist(original_racing_line_world[i1], path_world[-1])}")
+    if dist(original_racing_line_world[i1], path_world[0]) > dist(original_racing_line_world[i1], path_world[-1]):
         path_world.reverse()
 
     for (px, py) in path_world:
@@ -159,11 +153,11 @@ def main():
     modified_path = original_racing_line_world[:i1] + path_world + original_racing_line_world[i2+1:]
 
     # Save to CSV
-    with open(args.output, 'w', newline='') as f:
+    with open(extractor_config.OUTPUT_CSV.value, 'w', newline='') as f:
         writer = csv.writer(f)
         for point in modified_path:
             writer.writerow(point)
-    print(f"Saved modified racing line to: {args.output}")
+    print(f"Saved modified racing line to: {extractor_config.OUTPUT_CSV.value}")
 
 # Example usage
 if __name__ == "__main__":

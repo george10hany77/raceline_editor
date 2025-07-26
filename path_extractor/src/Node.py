@@ -1,6 +1,6 @@
-from state import State
+from path_extractor.config.config import extractor_config, State
 class Node():
-    def __init__(self, x, y, state=None, parent=None):
+    def __init__(self, x, y, state:State=None, parent=None):
         self.x = x
         self.y = y
         self.state = state

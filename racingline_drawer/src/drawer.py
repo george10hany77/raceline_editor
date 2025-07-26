@@ -3,6 +3,8 @@ import pandas as pd
 import argparse
 import os
 import yaml
+from path_extractor.config.config import extractor_config
+from racingline_drawer.config.config import drawer_config
 
 def load_map_metadata(yaml_path):
     with open(yaml_path, 'r') as f:
@@ -42,10 +44,4 @@ def draw_points_on_map(map_yaml_path, csv_path, output_path="output.png", point_
     print(f"Saved image with original CSV points to {output_path}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Draw 1-pixel points from CSV onto ROS map image.")
-    parser.add_argument("map_yaml", help="Path to the map YAML file")
-    parser.add_argument("csv_path", help="CSV file with x,y points in map frame")
-    parser.add_argument("--output", default="output.png", help="Output image path")
-
-    args = parser.parse_args()
-    draw_points_on_map(args.map_yaml, args.csv_path, args.output)
+    draw_points_on_map(drawer_config.MAP_YAML.value, drawer_config.RACING_CSV.value, drawer_config.OUTPUT_MAP.value)
