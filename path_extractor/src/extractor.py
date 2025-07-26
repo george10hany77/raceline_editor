@@ -39,7 +39,43 @@ def find_start_end_positions(pixels, width, height):
                 end = Node(x, y, state=State.END, parent=None)
     return start, end
 
-def extract_path(start:Node, end:Node, pixels, width, height):
+def extract_path_dfs(start: Node, end: Node, pixels, width, height):
+    """
+    Extracts the path from start to end using DFS.
+    Returns a list of nodes representing the path.
+    """
+    stack = [start]
+    visited = set()
+    visited.add(start)
+    start.parent = None
+
+    while stack:
+        current: Node = stack.pop()
+        if current.x == end.x and current.y == end.y:
+            # Reconstruct path
+            path = []
+            node = current
+            while node:
+                path.append(node)
+                node = node.parent
+            return path[::-1]  # Return reversed path
+
+        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, 1), (-1, 1), (1, -1)]:
+            nx, ny = current.x + dx, current.y + dy
+            neighbor = Node(nx, ny)
+            if (
+                0 <= nx < width and
+                0 <= ny < height and
+                neighbor not in visited and
+                rgb_to_hex(pixels[nx, ny][:3]) == State.PATH.value
+            ):
+                neighbor.parent = current
+                stack.append(neighbor)
+                visited.add(neighbor)
+    print("No path found, returning []")
+    return []  # No path found
+
+def extract_path_bfs(start:Node, end:Node, pixels, width, height):
     """
     Extracts the path from start to end using BFS.
     Returns a list of nodes representing the path.
@@ -145,8 +181,8 @@ def main():
         raise Exception("Start or end color not found.")
     print(f"Start at: ({start.x}, {start.y}), End at: ({end.x}, {end.y})")
 
-    # Generate path using BFS
-    path = extract_path(start, end, pixels, width, height)
+    # Generate path using DFS
+    path = extract_path_dfs(start, end, pixels, width, height)
     if not path:
         print("No path found.")
         return
