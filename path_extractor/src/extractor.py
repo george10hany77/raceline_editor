@@ -187,7 +187,7 @@ def main():
         print("No path found.")
         return
     print(f"Generated path length: {len(path)}")
-    path = path[::5]  # Optional discretization
+    path = path[::extractor_config.DISCRETIZATION_STEP.value]  # Optional discretization
     print(f"Discretized path length: {len(path)}")
 
     # Convert racing line from map (meters) to image pixels
