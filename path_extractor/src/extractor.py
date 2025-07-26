@@ -5,6 +5,7 @@ import yaml
 import csv
 import argparse
 from path_extractor.config.config import extractor_config, State
+from math import hypot
 
 def rgb_to_hex(rgb):
     return "#{:02x}{:02x}{:02x}".format(*rgb).lower()
@@ -158,7 +159,7 @@ def convert_path_to_world_coordinates(path, resolution, origin, height):
     for px, py in path_pixels:
         wx = px * resolution + origin[0]
         wy = (height - py) * resolution + origin[1]
-        path_world.append((round(wx, 7), round(wy, 7)))
+        path_world.append((round(wx, 7), round(wy, 7), extractor_config.NOT_VELOCITY.value))  # Use NOT_VELOCITY as placeholder for velocity
     return path_world
 
 def save_modified_path_to_csv(modified_path, output_csv_path):
@@ -168,6 +169,45 @@ def save_modified_path_to_csv(modified_path, output_csv_path):
         for point in modified_path:
             writer.writerow(point)
     print(f"Saved modified racing line to: {output_csv_path}")
+
+def fix_missing_velocities(new_csv_path, original_csv_path, output_csv_path, distance_threshold=10.0):
+    """
+    Replace NOT_VELOCITY velocity values in new_csv with values from original_csv by matching (x, y) coordinates.
+    """
+
+    # Load original CSV into memory
+    original_data = []
+    with open(original_csv_path, 'r') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if len(row) >= 3:
+                x, y, v = float(row[0]), float(row[1]), float(row[2])
+                original_data.append((x, y, v))
+
+    # Process new CSV
+    fixed_data = []
+    with open(new_csv_path, 'r') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if len(row) < 3:
+                continue
+            x_new, y_new, v_new = float(row[0]), float(row[1]), float(row[2])
+            if v_new == extractor_config.NOT_VELOCITY.value:
+                # Find the closest point in original_data
+                closest = min(original_data, key=lambda p: hypot(p[0] - x_new, p[1] - y_new))
+                if hypot(closest[0] - x_new, closest[1] - y_new) <= distance_threshold:
+                    v_new = closest[2]  # Replace missing value
+                else:
+                    print(f"Warning: No nearby match found for point ({x_new}, {y_new})")
+            fixed_data.append((x_new, y_new, v_new))
+
+    # Save to output CSV
+    with open(output_csv_path, 'w', newline='') as f:
+        writer = csv.writer(f)
+        for row in fixed_data:
+            writer.writerow(row)
+
+    print(f"Fixed CSV saved to {output_csv_path}")
 
 
 def main():
@@ -181,8 +221,8 @@ def main():
         raise Exception("Start or end color not found.")
     print(f"Start at: ({start.x}, {start.y}), End at: ({end.x}, {end.y})")
 
-    # Generate path using DFS
-    path = extract_path_dfs(start, end, pixels, width, height)
+    # Generate path using BFS
+    path = extract_path_bfs(start, end, pixels, width, height)
     if not path:
         print("No path found.")
         return
@@ -208,8 +248,8 @@ def main():
     if dist(original_racing_line_world[i1], path_world[0]) > dist(original_racing_line_world[i1], path_world[-1]):
         path_world.reverse()
 
-    for (px, py) in path_world:
-        print(f"New point: ({px}, {py})")
+    for (px, py, v) in path_world:
+        print(f"New point: ({px}, {py}, {v} )")
 
     # Final modified path
     modified_path = original_racing_line_world[:i1] + path_world + original_racing_line_world[i2+1:]
@@ -217,6 +257,12 @@ def main():
     # Save to CSV
     save_modified_path_to_csv(modified_path, extractor_config.OUTPUT_CSV.value)
 
+    # Fix missing velocities
+    fix_missing_velocities(
+        extractor_config.OUTPUT_CSV.value,
+        extractor_config.RACING_CSV.value,
+        extractor_config.OUTPUT_CSV.value
+    )
 # Example usage
 if __name__ == "__main__":
     main()

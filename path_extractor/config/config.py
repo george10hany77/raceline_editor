@@ -6,6 +6,7 @@ class extractor_config(Enum):
     RACING_CSV = "/home/george/python_files/racingline_editor/original_racinglines/csv_path.csv"
     OUTPUT_CSV = "/home/george/python_files/racingline_editor/output_racinglines/oda_kbera_new.csv"
     DISCRETIZATION_STEP = 5  # Optional discretization step for the path
+    NOT_VELOCITY = -999  # Placeholder for velocity
 
 class State(Enum):
     """
