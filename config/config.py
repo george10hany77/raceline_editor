@@ -11,6 +11,7 @@ class extractor_config(Enum):
     MAP_YAML = "/home/george/python_files/racingline_editor/original_maps/map.yaml"
     RACING_CSV = "/home/george/python_files/racingline_editor/original_racinglines/csv_path.csv"
     OUTPUT_CSV = "/home/george/python_files/racingline_editor/output_racinglines/oda_kbera_new.csv"
+    TEMP_RACING_CSV = "/home/george/python_files/racingline_editor/path_extractor/temp_csvs/temp_racingline.csv"
     DISCRETIZATION_STEP = 5  # Optional discretization step for the path
     NOT_VELOCITY = -999  # Placeholder for velocity
 
