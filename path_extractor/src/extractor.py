@@ -6,6 +6,7 @@ import csv
 import argparse
 from path_extractor.config.config import extractor_config, State
 from math import hypot
+import shutil
 
 def rgb_to_hex(rgb):
     return "#{:02x}{:02x}{:02x}".format(*rgb).lower()
@@ -30,15 +31,13 @@ def extract_pixels(image_path):
     width, height = img.size
     return pixels, width, height
 
-def find_start_end_positions(pixels, width, height):
-    start = end = None
+def find_starts_positions(pixels, width, height):
+    starts = []
     for y in range(height):
         for x in range(width):
             if rgb_to_hex(pixels[x, y][:3]) == State.START.value:
-                start = Node(x, y, state=State.START, parent=None)
-            elif rgb_to_hex(pixels[x, y][:3]) == State.END.value:
-                end = Node(x, y, state=State.END, parent=None)
-    return start, end
+                starts.append(Node(x, y, state=State.START, parent=None))
+    return starts
 
 def extract_path_dfs(start: Node, end: Node, pixels, width, height):
     """
@@ -76,10 +75,11 @@ def extract_path_dfs(start: Node, end: Node, pixels, width, height):
     print("No path found, returning []")
     return []  # No path found
 
-def extract_path_bfs(start:Node, end:Node, pixels, width, height):
+def extract_path_bfs(start:Node, pixels, width, height):
     """
     Extracts the path from start to end using BFS.
     Returns a list of nodes representing the path.
+    It only uses the start node and the end node will be found after the bfs.
     """
     queue = Queue()
     visited = set()
@@ -95,13 +95,15 @@ def extract_path_bfs(start:Node, end:Node, pixels, width, height):
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, 1), (-1, 1), (1, -1)]:
             nx, ny = current.x + dx, current.y + dy
             neighbor = Node(nx, ny)
-            if neighbor.x == end.x and neighbor.y == end.y:
-                neighbor.parent = current
+            if rgb_to_hex(pixels[nx, ny][:3]) == State.END.value:
+                neighbor.parent = current # The neighbor is the end node
+                end = neighbor
+                print(f"End found at: ({end.x}, {end.y})")
                 path = []
                 while neighbor:
                     path.append(neighbor)
                     neighbor = neighbor.parent
-                return path[::-1]  # Return reversed path
+                return path[::-1], end  # Return reversed path
             if 0 <= nx < width and 0 <= ny < height and neighbor not in visited and rgb_to_hex(pixels[nx, ny][:3]) == State.PATH.value:
                 neighbor.parent = current
                 queue.put(neighbor)
@@ -211,55 +213,62 @@ def fix_missing_velocities(new_csv_path, original_csv_path, output_csv_path, dis
 
 
 def main():
+    # Copy the racingline CSV to the temp path
+    shutil.copy(extractor_config.RACING_CSV.value, extractor_config.TEMP_RACING_CSV.value)
+    print(f"Copied {extractor_config.RACING_CSV.value} to {extractor_config.TEMP_RACING_CSV.value}")
     # Load image and metadata
     pixels, width, height = extract_pixels(extractor_config.MAP_PATH.value)
     resolution, origin = load_map_metadata(extractor_config.MAP_YAML.value)
 
     # Find start and end positions in the image
-    start, end = find_start_end_positions(pixels, width, height)
-    if not start or not end:
-        raise Exception("Start or end color not found.")
-    print(f"Start at: ({start.x}, {start.y}), End at: ({end.x}, {end.y})")
-
+    starts = find_starts_positions(pixels, width, height)
+    ends = []
+    if not starts:
+        raise Exception("Start color not found.")
+    for start in starts:
+        print(f"Start found at: ({start.x}, {start.y})")
+    ##############################################
+    for start in starts:
     # Generate path using BFS
-    path = extract_path_bfs(start, end, pixels, width, height)
-    if not path:
-        print("No path found.")
-        return
-    print(f"Generated path length: {len(path)}")
-    path = path[::extractor_config.DISCRETIZATION_STEP.value]  # Optional discretization
-    print(f"Discretized path length: {len(path)}")
+        path, end = extract_path_bfs(start, pixels, width, height)
+        ends.append(end)
+        if not path:
+            print("No path found.")
+            return
+        print(f"Generated path length: {len(path)}")
+        path = path[::extractor_config.DISCRETIZATION_STEP.value]  # Optional discretization
+        print(f"Discretized path length: {len(path)}")
 
-    # Convert racing line from map (meters) to image pixels
-    racing_line_pixels, original_racing_line_world = load_racing_line_pixels(
-        extractor_config.RACING_CSV.value, origin, resolution, height
-    )
+        # Convert racing line from map (meters) to image pixels
+        racing_line_pixels, original_racing_line_world = load_racing_line_pixels(
+            extractor_config.TEMP_RACING_CSV.value, origin, resolution, height
+        )
 
-    # Find nearest racing points to start and end
-    i1, i2 = find_nearest_indices(start, end, racing_line_pixels)
+        # Find nearest racing points to start and end
+        i1, i2 = find_nearest_indices(start, end, racing_line_pixels)
 
-    print(f"Replacing CSV segment from index {i1} to {i2} (inclusive)")
+        print(f"Replacing CSV segment from index {i1} to {i2} (inclusive)")
 
-    # Convert path to world coordinates
-    path_world = convert_path_to_world_coordinates(path, resolution, origin, height)
+        # Convert path to world coordinates
+        path_world = convert_path_to_world_coordinates(path, resolution, origin, height)
 
-    print(f"dist1: {dist(original_racing_line_world[i1], path_world[0])}")
-    print(f"dist2: {dist(original_racing_line_world[i1], path_world[-1])}")
-    if dist(original_racing_line_world[i1], path_world[0]) > dist(original_racing_line_world[i1], path_world[-1]):
-        path_world.reverse()
+        print(f"dist1: {dist(original_racing_line_world[i1], path_world[0])}")
+        print(f"dist2: {dist(original_racing_line_world[i1], path_world[-1])}")
+        if dist(original_racing_line_world[i1], path_world[0]) > dist(original_racing_line_world[i1], path_world[-1]):
+            path_world.reverse()
 
-    for (px, py, v) in path_world:
-        print(f"New point: ({px}, {py}, {v} )")
+        for (px, py, v) in path_world:
+            print(f"New point: ({px}, {py}, {v} )")
 
-    # Final modified path
-    modified_path = original_racing_line_world[:i1] + path_world + original_racing_line_world[i2+1:]
-
-    # Save to CSV
-    save_modified_path_to_csv(modified_path, extractor_config.OUTPUT_CSV.value)
+        # Final modified path
+        modified_path = original_racing_line_world[:i1] + path_world + original_racing_line_world[i2+1:]
+        # Save to CSV
+        save_modified_path_to_csv(modified_path, extractor_config.TEMP_RACING_CSV.value)
+    ##############################################
 
     # Fix missing velocities
     fix_missing_velocities(
-        extractor_config.OUTPUT_CSV.value,
+        extractor_config.TEMP_RACING_CSV.value,
         extractor_config.RACING_CSV.value,
         extractor_config.OUTPUT_CSV.value
     )
