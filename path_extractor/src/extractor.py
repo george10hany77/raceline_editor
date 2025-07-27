@@ -4,7 +4,7 @@ from PIL import Image
 import yaml
 import csv
 import argparse
-from path_extractor.config.config import extractor_config, State
+from config.config import extractor_config, State
 from math import hypot
 
 def rgb_to_hex(rgb):

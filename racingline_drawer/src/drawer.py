@@ -3,8 +3,7 @@ import pandas as pd
 import argparse
 import os
 import yaml
-from path_extractor.config.config import extractor_config
-from racingline_drawer.config.config import drawer_config
+from config.config import drawer_config, extractor_config, State
 
 def hex_to_bgr(hex_color):
     """
