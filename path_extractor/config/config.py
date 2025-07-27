@@ -12,8 +12,8 @@ class State(Enum):
     """
     Enum representing the state of a node in a pathfinding algorithm.
     """
-    START = "#74367b"  # Example hex color for start
-    END = "#94367b"  # Example hex color for end
+    START = "#11ff00"  # Example hex color for start
+    END = "#0a00ff"  # Example hex color for end
     PATH = "#84367b"  # Example hex color for path
 
     def __str__(self):
