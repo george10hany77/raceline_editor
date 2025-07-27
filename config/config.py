@@ -7,7 +7,7 @@ class drawer_config(Enum):
     OTHER_POINTS_COLOR = "#ff0000"  # Red for other points
 
 class extractor_config(Enum):
-    MAP_PATH = "/home/george/python_files/racingline_editor/mod_maps/mod_map.png"
+    MOD_MAP_PATH = "/home/george/python_files/racingline_editor/mod_maps/mod_map.png"
     MAP_YAML = "/home/george/python_files/racingline_editor/original_maps/map.yaml"
     RACING_CSV = "/home/george/python_files/racingline_editor/original_racinglines/csv_path.csv"
     OUTPUT_CSV = "/home/george/python_files/racingline_editor/output_racinglines/oda_kbera_new.csv"

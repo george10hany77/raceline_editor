@@ -4,7 +4,7 @@ from PIL import Image
 import yaml
 import csv
 import argparse
-from config.config import extractor_config, State
+from config.config import extractor_config, State, drawer_config
 from math import hypot
 import shutil
 
@@ -211,14 +211,65 @@ def fix_missing_velocities(new_csv_path, original_csv_path, output_csv_path, dis
 
     print(f"Fixed CSV saved to {output_csv_path}")
 
+def find_first_point(pixels, width, height):
+    """
+    Find the first point in the image that matches the START color.
+    Returns a Node with the coordinates of the first point found.
+    The pixels are from the modified image.
+    """
+    for y in range(height):
+        for x in range(width):
+            if rgb_to_hex(pixels[x, y][:3]) == drawer_config.FIRST_LAST_POINT_COLOR.value:
+                return Node(x, y, state=State.START, parent=None)
+    return None  # No start point found
+
+def find_nearest_index_to_first_point(racingline_pixels, first_point):
+    """
+    Find the index of the nearest point in racing_line_pixels to the first point.
+    """
+    return min(range(len(racingline_pixels)), key=lambda i: dist((first_point.x, first_point.y), racingline_pixels[i]))
+
+def rotate_racing_line_to_first_point_and_save_it_in_csv_racingline(original_racing_line_world, nearest_index, output_csv_path):
+    """
+    Rotates the racing line so it starts from the nearest point and updates the CSV.
+    """
+    rotated = original_racing_line_world[nearest_index:] + original_racing_line_world[:nearest_index]
+    rotated.append(rotated[0])  # Close the loop
+    with open(output_csv_path, 'w', newline='') as f:
+        writer = csv.writer(f)
+        for point in rotated:
+            writer.writerow(point)
+    print(f"Updated racing line CSV with rotated line starting from nearest point: {nearest_index}")
+
 
 def main():
     # Copy the racingline CSV to the temp path
     shutil.copy(extractor_config.RACING_CSV.value, extractor_config.TEMP_RACING_CSV.value)
     print(f"Copied {extractor_config.RACING_CSV.value} to {extractor_config.TEMP_RACING_CSV.value}")
+    
     # Load image and metadata
-    pixels, width, height = extract_pixels(extractor_config.MAP_PATH.value)
+    pixels, width, height = extract_pixels(extractor_config.MOD_MAP_PATH.value)
     resolution, origin = load_map_metadata(extractor_config.MAP_YAML.value)
+
+    # Convert racing line from map (meters) to image pixels
+    racing_line_pixels, original_racing_line_world = load_racing_line_pixels(
+        extractor_config.TEMP_RACING_CSV.value, origin, resolution, height
+    )
+
+    first_point = find_first_point(pixels, width, height)
+    if not first_point:
+        raise Exception("First point not found in the image.")
+    print(f"First point found at: ({first_point.x}, {first_point.y})")
+    # Find the nearest index to the first point in the racing line
+    nearest_index = find_nearest_index_to_first_point(racing_line_pixels, first_point)
+    print(f"Nearest index to first point in racing line: {nearest_index}")
+
+    # Rotate the original racing line to start from the nearest point
+    rotate_racing_line_to_first_point_and_save_it_in_csv_racingline(
+        original_racing_line_world,
+        nearest_index,
+        extractor_config.TEMP_RACING_CSV.value
+    )
 
     # Find start and end positions in the image
     starts = find_starts_positions(pixels, width, height)
@@ -252,10 +303,9 @@ def main():
         # Convert path to world coordinates
         path_world = convert_path_to_world_coordinates(path, resolution, origin, height)
 
-        print(f"dist1: {dist(original_racing_line_world[i1], path_world[0])}")
-        print(f"dist2: {dist(original_racing_line_world[i1], path_world[-1])}")
         if dist(original_racing_line_world[i1], path_world[0]) > dist(original_racing_line_world[i1], path_world[-1]):
             path_world.reverse()
+            print("Reversed path to match original racing line direction.")
 
         for (px, py, v) in path_world:
             print(f"New point: ({px}, {py}, {v} )")
