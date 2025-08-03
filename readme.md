@@ -45,13 +45,18 @@ Run the drawer script to create a visual representation of your racing line:
 ```bash
 python3 -m racingline_drawer.src.drawer
 ```
+![Alt Text](assets/mod_map.png)
 
 ### Step 3: Edit in GIMP
 1. Open GIMP
 2. Open the generated `mod_map.png` file from the `mod_maps/` directory
 
+![Alt Text](assets/wrong_line.png)
+
 ### Step 4: Handle Yellow Configured Pixel
 ⚠️ **Important**: If your path is revolving around the yellow 'configured' pixel, you need to relocate it to prevent the modified path from creating a bridge between the yellow pixel and the path.
+
+![Alt Text](assets/fixing.png)
 
 ### Step 5: Edit the Path
 Carefully place your pixels in the following order:
