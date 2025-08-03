@@ -155,3 +155,8 @@ To verify your modifications:
 - **Yellow pixel conflicts**: Ensure the yellow configured pixel (`#f6ff00`) is not interfering with your path
 - **Color recognition issues**: Make sure you're using the exact hex colors defined in the State configuration
 - **File path errors**: Check that all directories exist and configuration paths are correct for your system
+
+## Author
+
+**George Halim**  
+Email: georgehany064@gmail.com
