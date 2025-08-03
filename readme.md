@@ -43,6 +43,7 @@ python3 -m racingline_drawer.src.drawer
 
 This generates a `mod_map.png` in `mod_maps/` with your racing line overlaid.
 
+![drawnRacingline](assets/mod_map.png)
 
 ### 3️⃣ Open the image in GIMP
 
@@ -53,10 +54,15 @@ mod_maps/mod_map.png
 
 ### 4️⃣ Avoid yellow pixels ⚠️
 
-If your racingline **crosses any yellow "configured" pixel**, you must manually adjust it. These yellow pixels are reserved areas that should not be touched.
+If your racingline **crosses any yellow "configured" pixel**, you must manually adjust it. These yellow pixels are reserved areas that should not be overridden.
 
 🟡 Yellow = Off-limits
 
+![yelloPixel](assets/wrong_line.png)
+
+Make it like this:
+
+![fixing](assets/fixing.png)
 
 ### 5️⃣ Mark the path manually
 
@@ -77,9 +83,8 @@ This extracts your manually edited path and saves the result in:
 
 output_racinglines/
 
-You may get:
+You get:
 
-* An image with the path
 * A file with path coordinates
 
 
