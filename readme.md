@@ -1,146 +1,93 @@
+# Raceline Editor
 
----
+A tool for editing and modifying racing lines through visual map manipulation using GIMP.
 
-```markdown
-# 🏁 RaceLine Editor
+## Project Structure
 
-**RaceLine Editor** is a lightweight toolkit that allows you to overlay, manually edit, and extract racing lines from map images for custom path optimization.
-
-## 🧰 Requirements
-
-- 🐍 Python 3.7+
-- 🎨 [GIMP](https://www.gimp.org/) for manual pixel editing
-
-## 📂 Folder Structure
-
-
+```
 raceline_editor/
 ├── original_racinglines/     ← Place your input racingline files here
 ├── mod_maps/                 ← Modified maps go here (e.g. mod_map.png)
 ├── output_racinglines/       ← Final extracted racing lines output
 ├── racingline_drawer/src/
-│   └── drawer.py             ← Drawer script
+│   └── drawer.py            ← Drawer script
 ├── path_extractor/src/
-│   └── extractor.py          ← Extractor script
+│   └── extractor.py         ← Extractor script
 └── README.md
+```
 
+## Dependencies
 
-## 🚦 How to Use
+The project uses the following Python libraries:
+- `math` (hypot)
+- `shutil`
+- `queue` (Queue)
+- `PIL` (Pillow)
+- `yaml`
+- `csv`
+- `argparse`
+- `cv2` (OpenCV)
+- `pandas`
+- `os`
 
-Follow the steps below **in order**:
+Install the required packages:
+```bash
+pip install pillow pyyaml opencv-python pandas
+```
 
-### 1️⃣ Place your input racingline
+## Usage Instructions
 
-Put your 'csv' racingline file into:
+### Step 1: Prepare Input Files
+Place your input racingline files inside the `original_racinglines/` directory.
 
-original_racinglines/
-
-
-### 2️⃣ Run the drawer script
-
+### Step 2: Generate Visual Map
+Run the drawer script to create a visual representation of your racing line:
+```bash
 python3 -m racingline_drawer.src.drawer
+```
 
+### Step 3: Edit in GIMP
+1. Open GIMP
+2. Open the generated `mod_map.png` file from the `mod_maps/` directory
 
-This generates a `mod_map.png` in `mod_maps/` with your racing line overlaid.
+### Step 4: Handle Yellow Configured Pixel
+⚠️ **Important**: If your path is revolving around the yellow 'configured' pixel, you need to relocate it to prevent the modified path from creating a bridge between the yellow pixel and the path.
 
-![drawnRacingline](assets/mod_map.png)
+### Step 5: Edit the Path
+Carefully place your pixels in the following order:
+1. **Start pixel** - Mark the beginning of your modified path
+2. **Path pixels** - Draw your desired racing line
+3. **End pixel** - Mark the end of your modified path
 
-### 3️⃣ Open the image in GIMP
+**Critical Requirements:**
+- All pixels must be close to each other within the 8 directions (horizontally, vertically, and diagonally adjacent)
+- Ensure continuity between start, path, and end pixels
+- No gaps should exist in your pixel chain
 
-Launch GIMP and open:
-
-mod_maps/mod_map.png
-
-
-### 4️⃣ Avoid yellow pixels ⚠️
-
-If your racingline **crosses any yellow "configured" pixel**, you must manually adjust it. These yellow pixels are reserved areas that should not be overridden.
-
-🟡 Yellow = Off-limits
-
-![yelloPixel](assets/wrong_line.png)
-
-Make it like this:
-
-![fixing](assets/fixing.png)
-
-### 5️⃣ Mark the path manually
-
-* Add **1 start pixel** (e.g. green)
-* Draw a **continuous path** (e.g. purple)
-* Add **1 end pixel** (e.g. blue)
-
-> ✅ **All pixels must be adjacent in one of the 8 directions** — no gaps allowed!
-
-🧭 Your path must be 8-connected (including diagonals).
-
-
-### 6️⃣ Run the extractor script
-
+### Step 6: Extract Modified Racing Line
+Run the extractor script to generate the final racing line:
+```bash
 python3 -m path_extractor.src.extractor
+```
 
-This extracts your manually edited path and saves the result in:
+The output will be saved in the `output_racinglines/` directory.
 
-output_racinglines/
+### Step 7: Verification (Optional)
+To verify your modifications:
+1. Copy the output racingline from `output_racinglines/` to `original_racinglines/`
+2. Run the drawer script again:
+   ```bash
+   python3 -m racingline_drawer.src.drawer
+   ```
+3. Check the generated visual map to confirm your changes
 
-You get:
+## Tips
+- Always ensure pixel connectivity when drawing your path in GIMP
+- Use the zoom feature in GIMP for precise pixel placement
+- Save your work frequently when editing in GIMP
+- Keep backups of your original racingline files before making modifications
 
-* A file with path coordinates
-
-
-## 🛠️ Troubleshooting
-
-| Problem                     | Fix                                                              |
-| --------------------------- | ---------------------------------------------------------------- |
-| ❌ Start/end pixel not found | Make sure they're unique, visible, and saved before closing GIMP |
-| ❌ Path crosses yellow pixel | Carefully move it away using GIMP's tools                        |
-| ❌ Disconnected path         | Ensure all pixels are 8-connected with no gaps                   |
-| ❌ Output is empty or wrong  | Double-check pixel color, spacing, and map resolution            |
-
-## 📌 Quick Command Recap
-
-# Step 1: Draw racing line
-
-python3 -m racingline_drawer.src.drawer
-
-# Step 2: Edit mod_map.png in GIMP (no yellow pixels, 8-connected path)
-
-# Step 3: Extract pixel path
-python3 -m path_extractor.src.extractor
-
-## 🤝 Contributions
-
-Want to improve it?
-
-* Automate yellow-pixel detection
-* Add validation for pixel paths
-* Customize start/end colors
-
-Pull requests and ideas are welcome!
-
-## ⚖️ License
-
-MIT License
-
-Copyright (c) 2025 George Hany
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the “Software”), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-
-Made with 💻 and 🏎️ by [@george10hany77](https://github.com/george10hany77)
+## Troubleshooting
+- If the extractor fails, check that all pixels in your path are properly connected
+- Ensure the yellow configured pixel is not interfering with your path
+- Verify that start and end pixels are correctly placed and connected to the path
