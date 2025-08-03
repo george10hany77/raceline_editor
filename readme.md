@@ -86,6 +86,8 @@ To verify your modifications:
    ```
 3. Check the generated visual map to confirm your changes
 
+![Alt Text](assets/final_map.png)
+
 ## Tips
 - Always ensure pixel connectivity when drawing your path in GIMP
 - Use the zoom feature in GIMP for precise pixel placement
