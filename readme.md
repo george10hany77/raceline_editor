@@ -1,162 +1,321 @@
-# Raceline Editor
-A tool for editing and modifying racing lines through visual map manipulation using GIMP.
+# F1Tenth Raceline Editor
 
-## Project Structure
+A comprehensive tool for editing and modifying F1Tenth racing lines with both GUI-based interactive editing and traditional GIMP-based workflow support.
+
+## 🚀 Quick Start
+
+### GUI Editor (Recommended)
+
+```bash
+python main.py
+```
+
+### Traditional GIMP Workflow
+
+```bash
+python -m racingline_drawer.src.drawer
+# Edit in GIMP
+python -m path_extractor.src.extractor
+```
+
+## 📁 Project Structure
+
 ```
 raceline_editor/
-├── assets/ ← images are here
-├── config/ ← configurations
-├── mod_maps/ ← Modified maps go here (mod_map.png)
-├── original_maps/ ← original maps go here (map.png and map.yaml)
-├── original_racinglines/ ← Place your input racingline files here (input_racingline.csv)
-├── output_racinglines/ ← Final extracted racing lines output (output_racingline.csv)
-├── path_extractor/src/
-│ └── extractor.py ← Extractor script
-├── racingline_drawer/src/
-│ └── drawer.py ← Drawer script
+├── assets/                     # Example images and documentation
+├── config/                     # Configuration files
+│   ├── __init__.py
+│   └── config.py              # Path and color configurations
+├── gui/                       # GUI application
+│   ├── __init__.py
+│   └── raceline_editor_gui.py # Main GUI application
+├── mod_maps/                  # Generated maps for GIMP editing
+├── original_maps/             # Track maps (PNG + YAML metadata)
+│   ├── map.png
+│   └── map.yaml
+├── original_racinglines/      # Input raceline CSV files
+│   └── input_racingline.csv
+├── output_racinglines/        # Generated output racelines
+│   └── output_racingline.csv
+├── path_extractor/           # GIMP-based extraction tools
+│   ├── src/
+│   │   ├── extractor.py      # Extract paths from GIMP images
+│   │   └── Node.py           # Path node class
+│   └── temp_csvs/           # Temporary processing files
+├── racingline_drawer/        # Map generation tools
+│   └── src/
+│       └── drawer.py         # Generate visual maps
+├── main.py                   # GUI application launcher
+├── requirements.txt          # Python dependencies
 └── README.md
 ```
 
-## Configuration
+## ✨ Features
 
-The project uses configuration enums to manage file paths, colors, and processing parameters. Understanding these configurations is essential for proper setup and customization.
+### 🖥️ GUI Editor
 
-### Drawer Configuration (`drawer_config`)
+-   **Interactive Point Editing**: Click, drag, and modify raceline points in real-time
+-   **Real-time Spline Visualization**: See smooth cubic spline curves as you edit
+-   **Velocity Control**: Edit individual point velocities with dedicated controls
+-   **Visual Map Overlay**: Work directly on top of track maps
+-   **Zoom & Pan**: Navigate large maps with mouse wheel zoom and pan
+-   **Undo/Redo Support**: Keyboard shortcuts for common operations
+-   **Export/Import**: Save and load raceline CSV files
 
-Controls the drawing process that generates the visual map for GIMP editing:
+### 🎨 Traditional GIMP Workflow
 
-| Parameter | Default Value | Description |
-|-----------|--------------|-------------|
-| `MAP_YAML` | `original_maps/map.yaml` | Path to the original track map YAML file containing track layout data |
-| `RACING_CSV` | `original_racinglines/input_racingline.csv` | Input CSV file containing the original racing line coordinates |
-| `OUTPUT_MAP` | `mod_maps/mod_map.png` | Output path where the generated PNG map for GIMP editing will be saved |
-| `FIRST_LAST_POINT_COLOR` | `#f6ff00` (Yellow) | Color for the first and last points of the racing line (they are the same point in a closed loop) |
-| `OTHER_POINTS_COLOR` | `#ff0000` (Red) | Color for all other racing line points |
+-   **Pixel-Perfect Editing**: Use GIMP for precise manual path editing
+-   **Color-Coded States**: Visual indicators for start, end, and path pixels
+-   **Automatic Extraction**: Convert pixel art back to raceline coordinates
 
-### Extractor Configuration (`extractor_config`)
+## 🛠️ Installation
 
-Controls the extraction process that converts your GIMP-edited map back into racing line data:
+### Prerequisites
 
-| Parameter | Default Value | Description |
-|-----------|--------------|-------------|
-| `MOD_MAP_PATH` | `mod_maps/mod_map.png` | Path to the GIMP-modified map file |
-| `MAP_YAML` | `original_maps/map.yaml` | Same track map YAML file used in drawing |
-| `RACING_CSV` | `original_racinglines/input_racingline.csv` | Original racing line CSV (used for reference) |
-| `OUTPUT_CSV` | `output_racinglines/output_racingline.csv` | Final output CSV containing the extracted racing line |
-| `TEMP_RACING_CSV` | `path_extractor/temp_csvs/temp_racingline.csv` | Temporary CSV file used during processing |
-| `DISCRETIZATION_STEP` | `5` | Step size for path discretization (affects path resolution) |
-| `NOT_VELOCITY` | `-999` | Placeholder value used for velocity when not available |
+-   Python 3.7+
+-   Required packages (install via pip)
 
-### State Configuration (`State`)
+### Setup
 
-Defines the color coding for different pixel types in GIMP editing:
+1. Clone the repository:
 
-| State | Color Code | Color | Usage |
-|-------|------------|-------|-------|
-| `START` | `#11ff00` | Bright Green | Mark the starting point of your racing line |
-| `END` | `#0a00ff` | Blue | Mark the ending point of your racing line |
-| `PATH` | `#84367b` | Purple | Mark the racing line path pixels |
-
-### Customizing Configuration
-
-**Important:** You may need to update the file paths in the configuration files to match your system setup:
-
-1. **File Paths**: Ensure all paths point to the correct directories in your project structure
-2. **Color Customization**: You can modify the colors by changing the hex values:
-   - Use any valid hex color code (e.g., `#FF0000` for red)
-   - Ensure colors are distinct enough to differentiate in GIMP
-   - Avoid using colors that might conflict with track elements
-
-3. **Processing Parameters**:
-   - **DISCRETIZATION_STEP**: Lower values (1-3) = higher resolution, more points
-   - **DISCRETIZATION_STEP**: Higher values (5-10) = lower resolution, fewer points
-
-## Dependencies
-The project uses the following Python libraries:
-- `math` (hypot)
-- `shutil`
-- `queue` (Queue)
-- `PIL` (Pillow)
-- `yaml`
-- `csv`
-- `argparse`
-- `cv2` (OpenCV)
-- `pandas`
-- `os`
-
-Install the required packages:
 ```bash
-pip install pillow pyyaml opencv-python pandas
+git clone [repository-url]
+cd raceline_editor
 ```
 
-## Usage Instructions
+2. Install dependencies:
 
-### Step 1: Prepare Input Files
-Place your input racingline files inside the `original_racinglines/` directory.
-
-### Step 2: Generate Visual Map
-Run the drawer script to create a visual representation of your racing line:
 ```bash
-python3 -m racingline_drawer.src.drawer
+pip install -r requirements.txt
 ```
-![Alt Text](assets/mod_map.png)
 
-### Step 3: Edit in GIMP
-1. Open GIMP
-2. Open the generated `mod_map.png` file from the `mod_maps/` directory
+3. Launch the GUI:
 
-![Alt Text](assets/wrong_line.png)
-
-### Step 4: Handle Yellow Configured Pixel
-⚠️ **Important**: If your path is revolving around the yellow 'configured' pixel (`#f6ff00`), you need to relocate it to prevent the modified path from creating a bridge between the yellow pixel and the path.
-
-![Alt Text](assets/fixing.png)
-
-### Step 5: Edit the Path
-Carefully place your pixels using the specific colors defined in the State configuration:
-
-1. **Start pixel** - Use bright green (`#11ff00`) to mark the beginning of your modified path
-2. **Path pixels** - Use purple (`#84367b`) to draw your desired racing line
-3. **End pixel** - Use blue (`#0a00ff`) to mark the end of your modified path
-
-**Critical Requirements:**
-- All pixels must be close to each other within the 8 directions (horizontally, vertically, and diagonally adjacent)
-- Ensure continuity between start, path, and end pixels
-- No gaps should exist in your pixel chain
-- Use exact hex colors as specified in the State enum
-
-### Step 6: Extract Modified Racing Line
-Run the extractor script to generate the final racing line:
 ```bash
-python3 -m path_extractor.src.extractor
+python main.py
 ```
-The output will be saved in the `output_racinglines/` directory.
 
-### Step 7: Verification (Optional)
-To verify your modifications:
-1. Copy the output racingline from `output_racinglines/` to `original_racinglines/`
-2. Run the drawer script again:
-   ```bash
-   python3 -m racingline_drawer.src.drawer
-   ```
-3. Check the generated visual map to confirm your changes
+## 📖 Dependencies
 
-![Alt Text](assets/final_map.png)
+Install all required packages:
 
-## Tips
-- Always ensure pixel connectivity when drawing your path in GIMP
-- Use the zoom feature in GIMP for precise pixel placement
-- Save your work frequently when editing in GIMP
-- Keep backups of your original racingline files before making modifications
-- Use the exact hex colors specified in the configuration for proper recognition by the extractor
+```bash
+pip install -r requirements.txt
+```
 
-## Troubleshooting
-- **Path not extracting properly**: Verify that all pixels in your path are properly connected and use the correct colors
-- **Yellow pixel conflicts**: Ensure the yellow configured pixel (`#f6ff00`) is not interfering with your path
-- **Color recognition issues**: Make sure you're using the exact hex colors defined in the State configuration
-- **File path errors**: Check that all directories exist and configuration paths are correct for your system
+**Required packages:**
 
-## Author
+-   `tkinter` (GUI framework)
+-   `opencv-python` (Image processing)
+-   `numpy` (Numerical computing)
+-   `scipy` (Spline interpolation)
+-   `pillow` (Image handling)
+-   `pyyaml` (YAML file parsing)
+-   `pandas` (Data manipulation)
+-   `matplotlib` (Optional: plotting)
 
-**George Halim**  
-Email: georgehany064@gmail.com
+## 🎮 GUI Usage Guide
+
+### Getting Started
+
+1. **Launch**: Run `python main.py`
+2. **Load Data**: The application automatically loads default map and raceline
+3. **Start Editing**: Click on points to select and modify them
+
+### Core Features
+
+#### 🎯 Point Selection & Editing
+
+-   **Select Points**: Click near any raceline point to select it
+-   **Drag Points**: Click and drag selected points to new positions
+-   **Point Information**: View coordinates and velocity in the right panel
+
+#### ⚡ Velocity Editing
+
+-   **Manual Entry**: Type velocity values in the input field
+-   **Quick Buttons**: Use preset velocity buttons (0.5, 1.0, 1.5, 2.0, 3.0)
+-   **Visual Feedback**: Selected points show velocity labels
+
+#### 📍 Coordinate Editing
+
+-   **Precise Control**: Enter exact X,Y coordinates manually
+-   **Real-time Updates**: Changes reflect immediately on the map
+
+#### ➕ Adding/Removing Points
+
+-   **Add Points**: Click "Add Point" button, then click on map
+-   **Delete Points**: Select a point and press Delete key or click "Delete Point"
+-   **Minimum Points**: Maintains at least 3 points for valid racelines
+
+#### 🎨 Spline Visualization
+
+-   **Real-time Splines**: Green curves show smooth interpolated paths
+-   **Adjustable Smoothness**: Control spline smoothness (0.01 - 1.0)
+-   **Variable Resolution**: Adjust spline point density (50 - 500 points)
+
+#### 🔍 Navigation
+
+-   **Zoom**: Mouse wheel to zoom in/out
+-   **Pan**: Automatic centering and manual offset adjustment
+-   **Reset View**: Button to restore default view
+
+#### 💾 File Operations
+
+-   **Save**: Ctrl+S or "Save Raceline" button
+-   **Load**: Ctrl+O or "Load Raceline" button
+-   **Auto-format**: Saves with proper precision (7 decimal places)
+
+### Keyboard Shortcuts
+
+-   `Ctrl+S` - Save raceline
+-   `Ctrl+O` - Load raceline
+-   `Delete` - Delete selected point
+-   `Enter` - Apply velocity/coordinate changes
+
+## 🎨 Traditional GIMP Workflow
+
+### Configuration
+
+The project uses configuration enums for paths, colors, and processing parameters:
+
+#### Drawer Configuration
+
+| Parameter                | Default Value                               | Description            |
+| ------------------------ | ------------------------------------------- | ---------------------- |
+| `MAP_YAML`               | `original_maps/map.yaml`                    | Track map metadata     |
+| `RACING_CSV`             | `original_racinglines/input_racingline.csv` | Input raceline         |
+| `OUTPUT_MAP`             | `mod_maps/mod_map.png`                      | Generated map for GIMP |
+| `FIRST_LAST_POINT_COLOR` | `#f6ff00` (Yellow)                          | Start/end point color  |
+| `OTHER_POINTS_COLOR`     | `#ff0000` (Red)                             | Regular point color    |
+
+#### Extractor Configuration
+
+| Parameter             | Default Value                              | Description     |
+| --------------------- | ------------------------------------------ | --------------- |
+| `MOD_MAP_PATH`        | `mod_maps/mod_map.png`                     | GIMP-edited map |
+| `OUTPUT_CSV`          | `output_racinglines/output_racingline.csv` | Final output    |
+| `DISCRETIZATION_STEP` | `5`                                        | Path resolution |
+
+#### State Configuration (GIMP Colors)
+
+| State   | Color Code | Usage          |
+| ------- | ---------- | -------------- |
+| `START` | `#11ff00`  | Starting point |
+| `END`   | `#0a00ff`  | Ending point   |
+| `PATH`  | `#84367b`  | Path pixels    |
+
+### GIMP Workflow Steps
+
+1. **Generate Visual Map**:
+
+```bash
+python -m racingline_drawer.src.drawer
+```
+
+2. **Edit in GIMP**:
+
+    - Open `mod_maps/mod_map.png`
+    - Use exact hex colors for pixel painting
+    - Ensure pixel connectivity (8-directional)
+    - Mark start (green), path (purple), end (blue)
+
+3. **Extract Modified Path**:
+
+```bash
+python -m path_extractor.src.extractor
+```
+
+4. **Verify Results**:
+    - Check `output_racinglines/output_racingline.csv`
+    - Re-run drawer to visualize changes
+
+## 📊 Data Format
+
+### CSV Structure
+
+```csv
+x_coordinate,y_coordinate,velocity
+-0.2430698,0.2290873,2.0676071
+-0.4212379,0.1221564,2.0178379
+...
+```
+
+### YAML Map Metadata
+
+```yaml
+image: map.png
+resolution: 0.05
+origin: [-7.5, -5.0, 0.0]
+occupied_thresh: 0.65
+free_thresh: 0.196
+negate: 0
+```
+
+## 🐛 Troubleshooting
+
+### GUI Issues
+
+-   **Spline not appearing**: Check if you have at least 3 points and try adjusting smoothness
+-   **Points not selectable**: Ensure you're clicking within 15 pixels of a point
+-   **Performance issues**: Reduce spline resolution or map size
+
+### GIMP Workflow Issues
+
+-   **Path extraction fails**: Verify pixel connectivity and exact hex colors
+-   **Yellow pixel conflicts**: Relocate the first/last point marker
+-   **File path errors**: Check configuration paths match your system
+
+### Common Solutions
+
+-   **Dependencies**: Ensure all packages are installed: `pip install -r requirements.txt`
+-   **File permissions**: Check read/write access to project directories
+-   **Path formats**: Use forward slashes in configuration files
+
+## 🔧 Advanced Configuration
+
+### Custom Colors
+
+Modify `config/config.py` to change visualization colors:
+
+```python
+class drawer_config(Enum):
+    FIRST_LAST_POINT_COLOR = "#your_color"
+    OTHER_POINTS_COLOR = "#your_color"
+```
+
+### Performance Tuning
+
+-   **Spline Resolution**: Lower values for better performance
+-   **Discretization Step**: Higher values for faster processing
+-   **Map Size**: Resize large maps for better GUI performance
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📝 License
+
+[Add license information]
+
+## 👥 Authors & Maintainers
+
+**Original Author:**  
+George Halim - georgehany064@gmail.com
+
+**Current Maintainer:**  
+Fam Shihata - fam@awadlouis.com  
+GitHub: FamALouiz
+
+## 🔗 Related Projects
+
+-   [F1Tenth Gym](https://github.com/f1tenth/f1tenth_gym)
+-   [F1Tenth System](https://github.com/f1tenth/f1tenth_system)
+
+---
+
+_For detailed technical documentation and API reference, see the inline code documentation._
